@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"server/internal/config"
 	"server/internal/handlers/http"
+	"server/internal/service/album"
 	"server/internal/service/artist"
 	"server/internal/service/auth"
 	"server/internal/service/playlist"
@@ -56,10 +57,11 @@ func Run(ctx context.Context, config config.Config) error {
 	artistService := artist.New(pool)
 	playlistService := playlist.New(pool)
 	searchService := search.New(elasticsearch.WithAddresses("http://localhost:9200"))
+	albumService := album.New(pool)
 
 	// IndexTracks(pool, searchService)
 
 	log.Info().Msg("start server")
 
-	return fasthttp.ListenAndServe(fmt.Sprintf("localhost:%d", config.Server.Port), http.NewHttpHandler(authService, userService, trackService, searchService, artistService, playlistService))
+	return fasthttp.ListenAndServe(fmt.Sprintf("localhost:%d", config.Server.Port), http.NewHttpHandler(authService, userService, trackService, searchService, artistService, playlistService, albumService))
 }

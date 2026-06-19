@@ -1,6 +1,7 @@
 package http
 
 import (
+	"server/internal/service/album"
 	"server/internal/service/artist"
 	"server/internal/service/auth"
 	"server/internal/service/playlist"
@@ -21,6 +22,7 @@ type HttpHandler struct {
 	search   *search.SearchService
 	artist   *artist.ArtistService
 	playlist *playlist.PLaylistService
+	album    *album.AlbumService
 }
 
 func NewHttpHandler(
@@ -30,6 +32,7 @@ func NewHttpHandler(
 	search *search.SearchService,
 	artist *artist.ArtistService,
 	playlist *playlist.PLaylistService,
+	album *album.AlbumService,
 ) fasthttp.RequestHandler {
 	h := HttpHandler{
 		auth:     auth,
@@ -38,6 +41,7 @@ func NewHttpHandler(
 		search:   search,
 		artist:   artist,
 		playlist: playlist,
+		album:    album,
 	}
 
 	r := router.New()
@@ -48,10 +52,11 @@ func NewHttpHandler(
 	r.GET("/auth/current_user", h.GetCurrentUser)
 	r.GET("/me/playlists", middlewares.AuthMiddleware(h.GetMyPlaylists))
 	r.GET("/me/listen_history", middlewares.AuthMiddleware(h.GetMyListenHistory))
-	r.POST("/me/favorite", middlewares.AuthMiddleware(h.AddInFavorits))
+	r.POST("/me/favortis", middlewares.AuthMiddleware(h.AddInFavorits))
 	r.POST("/me/playlists", middlewares.AuthMiddleware(h.CreatePlaylist))
+	r.GET("/me/favortis", middlewares.AuthMiddleware(h.GetFavorits))
 	r.DELETE("/me/playlists/{playlist_id}", middlewares.AuthMiddleware(h.DeletePlaylist))
-	r.DELETE("/me/favorits", middlewares.AuthMiddleware(h.DeleteTrackFromFavoris))
+	r.DELETE("/me/favortis", middlewares.AuthMiddleware(h.DeleteTrackFromFavoris))
 	r.GET("/health", HealthCheck)
 	r.GET("/track/popular", h.GetPopularTracks)
 	r.GET("/track/{id}", h.GetTrackById)
@@ -61,8 +66,10 @@ func NewHttpHandler(
 	r.GET("/artist/{id}/albums", h.GetArtistAlbums)
 	r.GET("/artist/{id}/tracks", h.GetArtistPopularTracks)
 	r.GET("/playlist/{id}", h.GetPLaylistTracks)
+	r.GET("/album/{id}", h.GetAlbumById)
+	r.GET("/album/{id}/tracks", h.GetAlbumTracks)
 
-	return middlewares.LoggMiddleware(r.Handler)
+	return middlewares.LoggMiddleware(middlewares.CORSMiddleware(r.Handler))
 }
 
 func HealthCheck(ctx *fasthttp.RequestCtx) {

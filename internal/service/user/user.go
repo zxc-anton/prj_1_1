@@ -125,3 +125,30 @@ func (u *UserService) DeleteTrackFromFavorits(ctx context.Context, id, track_id 
 
 	return nil
 }
+
+func (u *UserService) GetFavorits(ctx context.Context, id, limit, offset int) ([]int, error) {
+	rows, err := u.pool.Query(
+		ctx,
+		`
+		SELECT
+			"track_ID"
+		FROM favorites
+		WHERE "user_ID" = $1
+		`,
+		id,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	ids := make([]int, 0)
+
+	for rows.Next() {
+		var id int
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		ids = append(ids, id)
+	}
+	return ids, nil
+}

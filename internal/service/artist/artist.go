@@ -90,7 +90,7 @@ func (a *ArtistService) GetArtistAlbums(ctx context.Context, id, limit, offset i
 				)
 			)
 			 AS authors
-		FROM author_albums aa
+		FROM album_author aa
 		JOIN album a ON a."ID" = aa."album_ID"
 		JOIN author at ON aa."author_ID" = at."ID"
 		WHERE at."ID" = $1

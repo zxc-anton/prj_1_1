@@ -135,7 +135,6 @@ func (t *TrackService) GetPopularTracks(ctx context.Context, limit, offset int) 
 		tracks = append(tracks, track)
 		clear(authorsBytes)
 	}
-	// authors := make(map[int])
 
 	return tracks, nil
 }

@@ -1,6 +1,7 @@
 package http
 
 import (
+	"encoding/json"
 	"server/pkg/token"
 	"server/pkg/types"
 	"strconv"
@@ -88,7 +89,7 @@ func (h *HttpHandler) GetMyListenHistory(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	limit, offset := types.ParsePaginateParams(string(ctx.FormValue("")), string(ctx.FormValue("")))
+	limit, offset := types.ParsePaginateParams(string(ctx.FormValue("limit")), string(ctx.FormValue("offset")))
 
 	tracks, err := h.user.GetMyListenHistory(ctx, id, limit, offset)
 
@@ -199,4 +200,33 @@ func (h *HttpHandler) DeleteTrackFromFavoris(ctx *fasthttp.RequestCtx) {
 
 	ctx.SetStatusCode(fasthttp.StatusNoContent)
 
+}
+
+func (h *HttpHandler) GetFavorits(ctx *fasthttp.RequestCtx) {
+	id := ctx.UserValue("id").(int)
+	limit, offset := types.ParsePaginateParams(string(ctx.FormValue("limit")), string(ctx.FormValue("offset")))
+
+	ids, err := h.user.GetFavorits(ctx, id, limit, offset)
+	if err != nil {
+		log.Error().Err(err).Send()
+		ctx.Error("internal error", fasthttp.StatusInternalServerError)
+		return
+	}
+
+	tracks, err := h.track.GetTracksByIDS(ctx, ids)
+	if err != nil {
+		log.Error().Err(err).Send()
+		ctx.Error("internal error", fasthttp.StatusInternalServerError)
+		return
+	}
+
+	body, err := json.Marshal(tracks)
+	if err != nil {
+		log.Error().Err(err).Send()
+		ctx.Error("internal error", fasthttp.StatusInternalServerError)
+		return
+	}
+
+	ctx.Response.Header.SetContentType("application/json")
+	ctx.Write(body)
 }

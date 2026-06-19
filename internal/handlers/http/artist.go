@@ -96,7 +96,14 @@ func (h *HttpHandler) GetArtistPopularTracks(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	body, err := json.Marshal(ids)
+	tracks, err := h.track.GetTracksByIDS(ctx, ids)
+	if err != nil {
+		log.Error().Err(err).Send()
+		ctx.Error("intrnal error", fasthttp.StatusInternalServerError)
+		return
+	}
+
+	body, err := json.Marshal(tracks)
 	if err != nil {
 		log.Error().Err(err).Send()
 		ctx.Error("intrnal error", fasthttp.StatusInternalServerError)
