@@ -15,5 +15,5 @@ type Album struct {
 	Title     string    `json:"title"`
 	Cover     *string   `json:"cover"`
 	CreatedAt time.Time `json:"created_At"`
-	Authors   []Author  `json:"author"`
+	Authors   []Author  `json:"authors"`
 }

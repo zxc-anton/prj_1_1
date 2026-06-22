@@ -70,10 +70,12 @@ func (h HttpHandler) LoginUser(ctx *fasthttp.RequestCtx) {
 	accessCookie.SetKey("access_token")
 	accessCookie.SetValue(accessToken)
 	accessCookie.SetHTTPOnly(true)
+	accessCookie.SetPath("/")
 
 	refreshCookie.SetKey("refresh_token")
 	refreshCookie.SetValue(refreshToken)
 	refreshCookie.SetHTTPOnly(true)
+	refreshCookie.SetPath("/")
 
 	ctx.Response.Header.SetCookie(accessCookie)
 	ctx.Response.Header.SetCookie(refreshCookie)
@@ -92,11 +94,48 @@ func (h HttpHandler) Logout(ctx *fasthttp.RequestCtx) {
 	accessCookie.SetExpire(time.Now())
 	accessCookie.SetMaxAge(-1)
 
-	refreshCookie.SetKey("access_token")
+	refreshCookie.SetKey("refresh_token")
 	refreshCookie.SetValue("")
 	refreshCookie.SetExpire(time.Now())
 	refreshCookie.SetMaxAge(-1)
 
 	ctx.Response.Header.SetCookie(accessCookie)
 	ctx.Response.Header.SetCookie(refreshCookie)
+}
+
+func (h *HttpHandler) RefreshToken(ctx *fasthttp.RequestCtx) {
+	refreshToken := string(ctx.Request.Header.Cookie("refresh_token"))
+
+	if len(refreshToken) == 0 {
+		ctx.Error("not valid token", fasthttp.StatusUnauthorized)
+		return
+	}
+
+	accessToken, refreshToken, err := h.auth.RefreshToken(ctx, refreshToken)
+
+	if err != nil {
+		log.Error().Err(err).Send()
+		ctx.Error("not valid token", fasthttp.StatusUnauthorized)
+		return
+	}
+
+	accessCookie := fasthttp.AcquireCookie()
+	refreshCookie := fasthttp.AcquireCookie()
+
+	defer fasthttp.ReleaseCookie(accessCookie)
+	defer fasthttp.ReleaseCookie(refreshCookie)
+
+	accessCookie.SetKey("access_token")
+	accessCookie.SetValue(accessToken)
+	accessCookie.SetHTTPOnly(true)
+	accessCookie.SetPath("/")
+
+	refreshCookie.SetKey("refresh_token")
+	refreshCookie.SetValue(refreshToken)
+	refreshCookie.SetHTTPOnly(true)
+	refreshCookie.SetPath("/")
+
+	ctx.Response.Header.SetCookie(accessCookie)
+	ctx.Response.Header.SetCookie(refreshCookie)
+
 }

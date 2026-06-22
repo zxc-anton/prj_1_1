@@ -49,6 +49,7 @@ func NewHttpHandler(
 	r.GET("/debug/pprof/{profile:*}", pprofhandler.PprofHandler)
 	r.POST("/auth/users", h.RequestUser)
 	r.POST("/auth/login", h.LoginUser)
+	r.POST("/auth/refresh_token", h.RefreshToken)
 	r.GET("/auth/current_user", h.GetCurrentUser)
 	r.GET("/me/playlists", middlewares.AuthMiddleware(h.GetMyPlaylists))
 	r.GET("/me/listen_history", middlewares.AuthMiddleware(h.GetMyListenHistory))

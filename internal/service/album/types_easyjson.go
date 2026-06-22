@@ -164,7 +164,7 @@ func easyjson6601e8cdDecodeServerInternalServiceAlbum1(in *jlexer.Lexer, out *Al
 					in.AddError((out.CreatedAt).UnmarshalJSON(data))
 				}
 			}
-		case "author":
+		case "authors":
 			if in.IsNull() {
 				in.Skip()
 				out.Authors = nil
@@ -230,7 +230,7 @@ func easyjson6601e8cdEncodeServerInternalServiceAlbum1(out *jwriter.Writer, in A
 		out.Raw((in.CreatedAt).MarshalJSON())
 	}
 	{
-		const prefix string = ",\"author\":"
+		const prefix string = ",\"authors\":"
 		out.RawString(prefix)
 		if in.Authors == nil && (out.Flags&jwriter.NilSliceAsEmpty) == 0 {
 			out.RawString("null")
