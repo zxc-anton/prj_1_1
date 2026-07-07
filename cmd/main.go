@@ -11,6 +11,5 @@ import (
 func main() {
 
 	config := config.MustLoadConfig(".")
-
 	run.Run(context.Background(), config)
 }

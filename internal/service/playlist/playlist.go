@@ -21,10 +21,10 @@ func (p *PLaylistService) GetPLaylistTracks(ctx context.Context, id int, limit, 
 		ctx,
 		`
 		SELECT 
-			t."ID"
+			t.id
 		FROM playlist_track pt
-		JOIN track t ON pt."track_ID" = t."ID"
-		WHERE pt."playlist_ID" = $1
+		JOIN tracks t ON pt.track_id = t.id
+		WHERE pt.playlist_id = $1
 		OFFSET $2
 		LIMIT $3
 		`,

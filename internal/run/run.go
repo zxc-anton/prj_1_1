@@ -60,8 +60,11 @@ func Run(ctx context.Context, config config.Config) error {
 	albumService := album.New(pool)
 
 	// IndexTracks(pool, searchService)
-
+	server := fasthttp.Server{
+		Handler: http.NewHttpHandler(authService, userService, trackService, searchService, artistService, playlistService, albumService),
+	}
 	log.Info().Msg("start server")
 
-	return fasthttp.ListenAndServe(fmt.Sprintf("localhost:%d", config.Server.Port), http.NewHttpHandler(authService, userService, trackService, searchService, artistService, playlistService, albumService))
+	return server.ListenAndServe(fmt.Sprintf("localhost:%d", config.Server.Port))
+	// return fasthttp.ListenAndServe(fmt.Sprintf("localhost:%d", config.Server.Port), http.NewHttpHandler(authService, userService, trackService, searchService, artistService, playlistService, albumService))
 }

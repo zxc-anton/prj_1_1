@@ -20,7 +20,7 @@ func New(pool *pgxpool.Pool) *TrackService {
 }
 
 func (t *TrackService) GetTrackAuthors(ctx context.Context, id int) ([]Author, error) {
-	rows, err := t.pool.Query(ctx, `SELECT a.name, a.photo_url, a."ID"  FROM track_artist ta JOIN author a ON a."ID" = ta."author_ID"  WHERE "track_ID" = $1 `, id)
+	rows, err := t.pool.Query(ctx, `SELECT a.name, a.photo_url, a.id  FROM track_author ta JOIN authors a ON a.id = ta.author_id  WHERE track_id = $1`, id)
 
 	if err != nil {
 		return nil, err
@@ -45,29 +45,29 @@ func (t *TrackService) GetTrackById(ctx context.Context, id int) (Track, error) 
 		ctx,
 		`SELECT 
 			t.file_url, 
-			t."album_ID", 
 			t.title, 
 			t.created_at,
+			t.length,
 			JSON_AGG(
 				JSON_BUILD_OBJECT(
-					'id', a."ID",
+					'id', a.id,
 					'name', a.name,
 					'photo_url', a.photo_url
 				)
 			)
 			 AS authors
-		FROM track t
-		JOIN track_artist ta ON t."ID" = ta."track_ID"
-		JOIN author a ON  ta."author_ID" = a."ID"
-		WHERE t."ID" = $1
-		GROUP BY t."ID", t.file_url, t."album_ID", t.title, t.created_at`,
+		FROM tracks t
+		JOIN track_author ta ON t.id = ta.track_id
+		JOIN authors a ON  ta.author_id = a.id
+		WHERE t.id = $1
+		GROUP BY t.id, t.file_url, t.title, t.created_at`,
 		id,
 	)
 
 	track := Track{Id: id}
 	authorsBytes := make([]byte, 0)
 
-	if err := row.Scan(&track.FileURL, &track.AlbumId, &track.Title, &track.CreatedAt, &authorsBytes); err != nil {
+	if err := row.Scan(&track.FileURL, &track.Title, &track.CreatedAt, &track.Length, &authorsBytes); err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return Track{}, ErrNotFound
 		}
@@ -85,30 +85,31 @@ func (t *TrackService) GetPopularTracks(ctx context.Context, limit, offset int) 
 	rows, err := t.pool.Query(
 		ctx,
 		`SELECT 
-			t."ID", 
+			t.id, 
 			t.file_url, 
-			t."album_ID", 
+			at.album_id, 
 			t.title, 
 			t.created_at,
 			COALESCE(
 				(
 					SELECT JSON_AGG(
 						JSON_BUILD_OBJECT(
-							'id', a."ID",
+							'id', a.id,
 							'name', a.name,
 							'photo_url', a.photo_url
 						) ORDER BY a.name
 					)
-					FROM track_artist ta
-					JOIN author a ON ta."author_ID" = a."ID"
-					WHERE ta."track_ID" = t."ID"
+					FROM track_author ta
+					JOIN authors a ON ta.author_id = a.id
+					WHERE ta.track_id = t.id
 				),
 				'[]'::json
 			) AS authors
-		FROM track t 
-		LEFT JOIN listen_history lh ON t."ID" = lh."track_ID"
-		GROUP BY t."ID", t.file_url, t."album_ID", t.title, t.created_at 
-		ORDER BY COUNT(lh."track_ID") DESC
+		FROM tracks t 
+		LEFT JOIN listen_history lh ON t.id = lh.track_id
+		LEFT JOIN album_track at ON at.track_id = t.id
+		GROUP BY t.id, t.file_url, at.album_id, t.title, t.created_at 
+		ORDER BY COUNT(lh.track_id) DESC
 		OFFSET $1 
 		LIMIT $2`,
 		offset,
@@ -143,24 +144,25 @@ func (t *TrackService) GetTracksByIDS(ctx context.Context, ids []int) ([]Track, 
 	rows, err := t.pool.Query(
 		ctx,
 		`SELECT 
-			t."ID",
+			t.id,
 			t.file_url, 
-			t."album_ID", 
+			at.album_id, 
 			t.title, 
 			t.created_at,
 			JSON_AGG(
 				JSON_BUILD_OBJECT(
-					'id', a."ID",
+					'id', a.id,
 					'name', a.name,
 					'photo_url', a.photo_url
 				)
 			)
 			 AS authors
-		FROM track t
-		JOIN track_artist ta ON t."ID" = ta."track_ID"
-		JOIN author a ON  ta."author_ID" = a."ID"
-		WHERE t."ID" = ANY($1)
-		GROUP BY t."ID", t.file_url, t."album_ID", t.title, t.created_at`,
+		FROM tracks t
+		JOIN track_author ta ON t.id = ta.track_id
+		JOIN authors a ON  ta.author_id = a.id
+		LEFT JOIN album_track at ON at.track_id = t.id
+		WHERE t.id = ANY($1)
+		GROUP BY t.id, at.album_id, t.file_url, t.title, t.created_at`,
 		ids,
 	)
 
@@ -186,4 +188,10 @@ func (t *TrackService) GetTracksByIDS(ctx context.Context, ids []int) ([]Track, 
 	}
 
 	return tracks, nil
+}
+
+func (t *TrackService) IsFollowed(ctx context.Context, trackId, userId int) (res bool, err error) {
+	row := t.pool.QueryRow(ctx, `SELECT EXISTS (SELECT * FROM favorites WHERE user_id=$1 AND track_id=$2)`, userId, trackId)
+	err = row.Scan(&res)
+	return
 }

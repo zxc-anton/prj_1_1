@@ -9,11 +9,13 @@ type Author struct {
 }
 
 type Track struct {
-	Id        int       `json:"id"`
-	FileURL   *string   `json:"file_url"`
-	AlbumId   *int      `json:"album_id"`
-	Title     string    `json:"title"`
-	CreatedAt time.Time `json:"created_at"`
+	Id         int       `json:"id"`
+	FileURL    *string   `json:"file_url"`
+	AlbumId    *int      `json:"album_id"`
+	Title      string    `json:"title"`
+	CreatedAt  time.Time `json:"created_at"`
+	Length     int       `json:"length"`
+	IsFollowed bool      `json:"is_followed"`
 
 	Authors []Author `json:"authors"`
 }

@@ -14,12 +14,7 @@ import (
 )
 
 func (h *HttpHandler) GetTrackById(ctx *fasthttp.RequestCtx) {
-	idStr, _ := ctx.UserValue("id").(string)
-
-	id, err := strconv.Atoi(idStr)
-	if err != nil {
-
-	}
+	id, err := strconv.Atoi(ctx.UserValue("id").(string))
 
 	if err != nil {
 		log.Error().Err(err).Send()
@@ -36,6 +31,17 @@ func (h *HttpHandler) GetTrackById(ctx *fasthttp.RequestCtx) {
 		}
 		ctx.Error("internal error", fasthttp.StatusInternalServerError)
 		return
+	}
+
+	userId, ok := ctx.UserValue("user_id").(int)
+
+	if ok {
+		isFollowed, err := h.track.IsFollowed(ctx, id, userId)
+		if err != nil {
+			log.Error().Err(err).Send()
+			ctx.Error("internal error", fasthttp.StatusInternalServerError)
+		}
+		track.IsFollowed = isFollowed
 	}
 
 	body, err := track.MarshalJSON()

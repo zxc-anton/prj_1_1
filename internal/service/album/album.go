@@ -23,23 +23,23 @@ func (a *AlbumService) GetAlbumById(ctx context.Context, id int) (Album, error) 
 		ctx,
 		`
 		SELECT
-			a."ID",
+			a.id,
 			a.title,
 			a.cover_url,
 			a.created_at,
 			JSON_AGG(
 				JSON_BUILD_OBJECT(
-					'id', at."ID",
+					'id', at.id,
 					'name', at.name,
 					'cover', at.photo_url
 				)
 			)
 			 AS authors
-		FROM album a
-		JOIN album_author aa ON a."ID" = aa."album_ID"
-		JOIN author at ON aa."author_ID" = at."ID"
-		WHERE a."ID" = $1
-		GROUP BY a."ID", a.title, a.cover_url, a.created_at
+		FROM albums a
+		JOIN album_author aa ON a.id = aa.album_id
+		JOIN authors at ON aa.author_id = at.id
+		WHERE a.id = $1
+		GROUP BY a.id, a.title, a.cover_url, a.created_at
 		`,
 		id,
 	)
@@ -63,9 +63,9 @@ func (a *AlbumService) GetAlbumTracks(ctx context.Context, id int) ([]int, error
 		ctx,
 		`
 		SELECT
-			"track_ID"
+			track_id
 		FROM album_track
-		WHERE "album_ID" = $1
+		WHERE album_id = $1
 		`,
 		id,
 	)

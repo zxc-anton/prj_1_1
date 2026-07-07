@@ -60,7 +60,7 @@ func NewHttpHandler(
 	r.DELETE("/me/favortis", middlewares.AuthMiddleware(h.DeleteTrackFromFavoris))
 	r.GET("/health", HealthCheck)
 	r.GET("/track/popular", h.GetPopularTracks)
-	r.GET("/track/{id}", h.GetTrackById)
+	r.GET("/track/{id}", middlewares.MaybeAuthMiddleware(h.GetTrackById))
 	r.GET("/track/{id}/authors", h.GetTrackAuthors)
 	r.GET("/search", h.Search)
 	r.GET("/artist/{id}", h.GetArtistById)

@@ -25,7 +25,7 @@ func (a *ArtistService) GetArtistLastMonthListeners(ctx context.Context, id int)
 		`SELECT 
 			COUNT(*) lastMonthListeners
 		FROM listen_history 
-		WHERE "track_ID" = ANY(SELECT "track_ID" FROM track_artist WHERE "author_ID" = $1)`,
+		WHERE track_id = ANY(SELECT track_id FROM track_author WHERE author_id = $1)`,
 		id,
 	)
 	var LastMonthListeners int
@@ -41,7 +41,7 @@ func (a *ArtistService) GetArtistLastMonthListeners(ctx context.Context, id int)
 func (a *ArtistService) GetArtistById(ctx context.Context, id int) (ArtistResponse, error) {
 	row := a.pool.QueryRow(
 		ctx,
-		`SELECT name, photo_url FROM author WHERE "ID" = $1`,
+		`SELECT name, photo_url FROM authors WHERE id = $1`,
 		id,
 	)
 
@@ -71,30 +71,30 @@ func (a *ArtistService) GetArtistAlbums(ctx context.Context, id, limit, offset i
 		ctx,
 		`
 		WITH author_albums AS (
-			SELECT DISTINCT aa."album_ID"
-		FROM album_author aa
-		WHERE aa."author_ID" = $1
-		ORDER BY aa."album_ID"
-		OFFSET $2
-		LIMIT $3
+			SELECT DISTINCT aa.album_id
+			FROM album_author aa
+			WHERE aa.author_id = $1
+			ORDER BY aa.album_id
+			OFFSET $2
+			LIMIT $3
 		)
 		SELECT
-			a."ID",
+			a.id,
 			a.title,
 			a.cover_url,
 			JSON_AGG(
 				JSON_BUILD_OBJECT(
-					'id', at."ID",
+					'id', at.id,
 					'name', at.name,
 					'photo_url', at.photo_url
 				)
 			)
 			 AS authors
 		FROM album_author aa
-		JOIN album a ON a."ID" = aa."album_ID"
-		JOIN author at ON aa."author_ID" = at."ID"
-		WHERE at."ID" = $1
-		GROUP BY a."ID", a.title, a.cover_url
+		JOIN albums a ON a.id = aa.album_id
+		JOIN authors at ON aa.author_id = at.id
+		WHERE at.id = $1
+		GROUP BY a.id, a.title, a.cover_url
 		OFFSET $2
 		LIMIT $3`,
 		id,
@@ -133,10 +133,10 @@ func (a *ArtistService) GetArtistPopularTracksIDS(ctx context.Context, id, limit
 		ctx,
 		`
 		SELECT
-			t."ID"
-		FROM track t
-		JOIN track_artist ta ON t."ID" = ta."track_ID"
-		WHERE ta."author_ID" = $1
+			t.id
+		FROM tracks t
+		JOIN track_author ta ON t.id = ta.track_id
+		WHERE ta.author_id = $1
 		OFFSET $2
 		LIMIT $3
 		`,

@@ -18,14 +18,14 @@ func New(pool *pgxpool.Pool) *UserService {
 }
 
 func (u *UserService) GetCurrentUser(ctx context.Context, id int) (user types.UserResponse, err error) {
-	row := u.pool.QueryRow(ctx, "SELECT avatar_url, name FROM \"user\" WHERE \"ID\" = $1", id)
+	row := u.pool.QueryRow(ctx, "SELECT avatar_url, name FROM users WHERE id = $1", id)
 	err = row.Scan(&user.Avatar_URL, &user.Name)
 	user.Id = id
 	return
 }
 
 func (u *UserService) GetMyPlaylists(ctx context.Context, id, limit, offset int) (types.MyPLaylists, error) {
-	rows, err := u.pool.Query(ctx, "SELECT name, cover_url, \"ID\", is_public FROM playlist WHERE \"user_ID\" = $1 OFFSET $2 LIMIT $3", id, offset, limit)
+	rows, err := u.pool.Query(ctx, "SELECT name, cover_url, id, is_public FROM playlists WHERE user_id = $1 OFFSET $2 LIMIT $3", id, offset, limit)
 
 	if err != nil {
 		return nil, err
@@ -46,7 +46,21 @@ func (u *UserService) GetMyPlaylists(ctx context.Context, id, limit, offset int)
 }
 
 func (u *UserService) GetMyListenHistory(ctx context.Context, id, limit, offset int) (types.ListenHistory, error) {
-	rows, err := u.pool.Query(ctx, `SELECT t."ID", t.file_url, t.title, a."ID" album_id, a.title album FROM listen_history lh JOIN track t ON lh."track_ID" = t."ID" RIGHT JOIN album a ON a."ID" = t."album_ID"  WHERE lh."user_ID" = $1 OFFSET $2 LIMIT $3`, id, offset, limit)
+	rows, err := u.pool.Query(
+		ctx,
+		`
+		SELECT 
+			t.id, t.file_url, t.title, a.id album_id, a.title album
+		FROM listen_history lh 
+		JOIN tracks t ON lh.track_id = t.id
+		JOIN album_track at ON at.track_id = t.id
+ 		RIGHT JOIN albums a ON a.id = at.album_id
+		WHERE lh.user_id = $1 
+		OFFSET $2 
+		LIMIT $3
+		`,
+		id, offset, limit,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -71,7 +85,7 @@ func (u *UserService) AddInFavorits(ctx context.Context, id, trackId int) error 
 	}
 	defer tx.Commit(ctx)
 
-	_, err = tx.Exec(ctx, `INSERT INTO favorites ("user_ID", "track_ID") VALUES ($1, $2)`, id, trackId)
+	_, err = tx.Exec(ctx, `INSERT INTO favorites (user_id, track_id) VALUES ($1, $2)`, id, trackId)
 	if err != nil {
 		tx.Rollback(ctx)
 		return err
@@ -86,7 +100,7 @@ func (u *UserService) CreatePlaylist(ctx context.Context, id int, playlist types
 		return err
 	}
 	defer tx.Commit(ctx)
-	_, err = tx.Exec(ctx, `INSERT INTO playlist (name, is_public, "user_ID") VALUES ($1, $2, $3)`, playlist.Name, playlist.IsPublic, id)
+	_, err = tx.Exec(ctx, `INSERT INTO playlist (name, is_public, user_id) VALUES ($1, $2, $3)`, playlist.Name, playlist.IsPublic, id)
 	if err != nil {
 		tx.Rollback(ctx)
 		return err
@@ -101,7 +115,7 @@ func (u *UserService) DeletePLaylist(ctx context.Context, id int, playlistId int
 	}
 	defer tx.Commit(ctx)
 
-	_, err = tx.Exec(ctx, `DELETE FROM playlist WHERE "user_ID" = $1 AND "ID" = $2`, id, playlistId)
+	_, err = tx.Exec(ctx, `DELETE FROM playlist WHERE user_id = $1 AND id = $2`, id, playlistId)
 	if err != nil {
 		tx.Rollback(ctx)
 		return err
@@ -116,7 +130,7 @@ func (u *UserService) DeleteTrackFromFavorits(ctx context.Context, id, track_id 
 		return err
 	}
 	defer tx.Commit(ctx)
-	_, err = tx.Exec(ctx, `DELETE FROM favorites WHERE "user_ID" = $1 AND "track_ID" = $2`, id, track_id)
+	_, err = tx.Exec(ctx, `DELETE FROM favorites WHERE user_id = $1 AND track_id = $2`, id, track_id)
 
 	if err != nil {
 		tx.Rollback(ctx)
@@ -131,9 +145,9 @@ func (u *UserService) GetFavorits(ctx context.Context, id, limit, offset int) ([
 		ctx,
 		`
 		SELECT
-			"track_ID"
+			track_id
 		FROM favorites
-		WHERE "user_ID" = $1
+		WHERE user_id = $1
 		`,
 		id,
 	)

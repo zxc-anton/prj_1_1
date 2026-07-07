@@ -31,7 +31,7 @@ func (a *AuthService) RegisteUser(ctx context.Context, user types.RequestUser) e
 	}
 	defer tx.Commit(ctx)
 
-	_, err = tx.Exec(ctx, `INSERT INTO "user" (name, email, password_hash, is_verification) VALUES ($1, $2, $3, $4)`, user.Name, user.Email, hashPassword, false)
+	_, err = tx.Exec(ctx, `INSERT INTO users (name, email, password, is_verification) VALUES ($1, $2, $3, $4)`, user.Name, user.Email, hashPassword, false)
 	if err != nil {
 		tx.Rollback(ctx)
 		return err
@@ -40,7 +40,7 @@ func (a *AuthService) RegisteUser(ctx context.Context, user types.RequestUser) e
 }
 
 func (a *AuthService) LoginUser(ctx context.Context, params types.LoginUser) (string, string, error) {
-	row := a.pool.QueryRow(ctx, `SELECT password_hash, "ID" FROM "user" WHERE email = $1`, params.Email)
+	row := a.pool.QueryRow(ctx, `SELECT password, id FROM users WHERE email = $1`, params.Email)
 	var (
 		password string
 		id       int

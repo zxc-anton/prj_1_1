@@ -79,6 +79,18 @@ func easyjson6601e8cdDecodeServerInternalServiceTrack(in *jlexer.Lexer, out *Tra
 					in.AddError((out.CreatedAt).UnmarshalJSON(data))
 				}
 			}
+		case "length":
+			if in.IsNull() {
+				in.Skip()
+			} else {
+				out.Length = int(in.Int())
+			}
+		case "is_followed":
+			if in.IsNull() {
+				in.Skip()
+			} else {
+				out.IsFollowed = bool(in.Bool())
+			}
 		case "authors":
 			if in.IsNull() {
 				in.Skip()
@@ -152,6 +164,16 @@ func easyjson6601e8cdEncodeServerInternalServiceTrack(out *jwriter.Writer, in Tr
 		const prefix string = ",\"created_at\":"
 		out.RawString(prefix)
 		out.Raw((in.CreatedAt).MarshalJSON())
+	}
+	{
+		const prefix string = ",\"length\":"
+		out.RawString(prefix)
+		out.Int(int(in.Length))
+	}
+	{
+		const prefix string = ",\"is_followed\":"
+		out.RawString(prefix)
+		out.Bool(bool(in.IsFollowed))
 	}
 	{
 		const prefix string = ",\"authors\":"
